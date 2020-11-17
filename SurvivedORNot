@@ -1,0 +1,338 @@
+<h1>HEART FAILURE<h1>
+Hello! Are you happy? Keep smile and stay happy. 
+I use data from Kaggle https://www.kaggle.com/andrewmvd/heart-failure-clinical-data/notebooks
+import matplotlib.pyplot as plt
+import warnings
+import seaborn as sns
+#!pip install plotly
+!pip install statsmodels
+from colorama import Fore, Back, Style 
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, accuracy_score
+from mlxtend.plotting import plot_confusion_matrix
+from plotly.offline import plot, iplot, init_notebook_mode
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import plotly.express as px
+from statsmodels.formula.api import ols
+import plotly.graph_objs as gobj
+#init_notebook_mode(connected=True)
+#warnings.filterwarnings("ignore")
+import plotly.figure_factory as ff
+!pip install xgboost
+#!pip install sklearn
+%matplotlib inline
+import xgboost
+import lightgbm
+from sklearn.svm import SVC
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
+
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+dataset = pd.read_csv('heart_failure_clinical_records_dataset.csv')
+
+heart_data = pd.read_csv('heart_failure_clinical_records_dataset.csv')
+heart_data.head()
+
+#Mengecek missing value
+heart_data.info()
+
+#Mengecek missing value
+heart_data.info()
+
+#num_attributes = heart_data.select_dtypes(exclude='object').drop('DEATH_EVENT', axis=1).copy()
+num_attributes=heart_data[['age','creatinine_phosphokinase','ejection_fraction','platelets','serum_creatinine','serum_sodium','time']]
+fig = plt.figure(figsize=(30, 58))
+for i in range(len(num_attributes.columns)):
+    fig.add_subplot(19,14, i+1)
+    sns.boxplot(y=num_attributes.iloc[:,i])
+plt.tight_layout()
+plt.show()
+
+from matplotlib.ticker import StrMethodFormatter
+ax = heart_data.hist(column='age', bins=25, grid=False, figsize=(12,8), color='#86bf91', zorder=2, rwidth=0.9)
+
+ax = ax[0]
+for x in ax:
+
+    # Despine
+    x.spines['right'].set_visible(False)
+    x.spines['top'].set_visible(False)
+    x.spines['left'].set_visible(False)
+
+    # Switch off ticks
+    x.tick_params(axis="both", which="both", bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on")
+
+    # Draw horizontal axis lines
+    vals = x.get_yticks()
+    for tick in vals:
+        x.axhline(y=tick, linestyle='dashed', alpha=0.4, color='#eeeeee', zorder=1)
+
+    # Remove title
+    x.set_title("")
+
+    # Set x-axis label
+    x.set_xlabel("age (year)", labelpad=20, weight='bold', size=12)
+
+    # Set y-axis label
+    x.set_ylabel("sum", labelpad=20, weight='bold', size=12)
+
+    # Format y-axis label
+    x.yaxis.set_major_formatter(StrMethodFormatter('{x:,g}'))
+    
+sns.set_style("whitegrid") 
+sns.boxplot(x = 'sex', y = 'age',  data = heart_data) 
+
+#AGE
+
+male = heart_data[heart_data["sex"]==1]
+female = heart_data[heart_data["sex"]==0]
+
+male_survi = male[heart_data["DEATH_EVENT"]==0]
+male_not = male[heart_data["DEATH_EVENT"]==1]
+female_survi = female[heart_data["DEATH_EVENT"]==0]
+female_not = female[heart_data["DEATH_EVENT"]==1]
+
+label = ['Male - Survived','Male - Not Survived', "Female -  Survived", "Female - Not Survived"]
+values = [len(male[heart_data["DEATH_EVENT"]==0]),len(male[heart_data["DEATH_EVENT"]==1]),
+         len(female[heart_data["DEATH_EVENT"]==0]),len(female[heart_data["DEATH_EVENT"]==1])]
+
+age_death=pd.DataFrame({'label' : label,
+              'Count' : values})
+print(age_death.head())
+age_death['Count'].plot(kind='pie', ylabel='',
+                            figsize=(5, 6),
+                            autopct='%1.1f%%', # add in percentages
+                            startangle=90,     # start angle 90° (Africa)
+                            shadow=True,       # add shadow      
+                            labels=None
+                            )
+plt.title('Survival-Gender')
+plt.axis('equal') # Sets the pie chart to look like a circle.
+plt.legend(labels=label, loc='upper left') 
+plt.show()
+
+#Diabetes
+
+diabetes_yes = heart_data[heart_data['diabetes']==1]
+diabetes_no = heart_data[heart_data['diabetes']==0]
+
+diabetes_yes_survi = diabetes_yes[heart_data["DEATH_EVENT"]==0]
+diabetes_yes_not_survi = diabetes_yes[heart_data["DEATH_EVENT"]==1]
+diabetes_no_survi = diabetes_no[heart_data["DEATH_EVENT"]==0]
+diabetes__no_not_survi = diabetes_no[heart_data["DEATH_EVENT"]==1]
+
+label = ['Diabetes Yes - Survived','Diabetes Yes - Not Survived', 'Diabetes NO - Survived', 'Diabetes NO - Not Survived']
+values = [len(diabetes_yes[heart_data["DEATH_EVENT"]==0]),len(diabetes_yes[heart_data["DEATH_EVENT"]==1]),
+         len(diabetes_no[heart_data["DEATH_EVENT"]==0]),len(diabetes_no[heart_data["DEATH_EVENT"]==1])]
+
+diabet_death=pd.DataFrame({'label' : label,
+              'Count' : values})
+print(diabet_death.head())
+diabet_death['Count'].plot(kind='pie', ylabel='',
+                            figsize=(5, 6),
+                            autopct='%1.1f%%', # add in percentages
+                            startangle=90,     # start angle 90° (Africa)
+                            shadow=True,       # add shadow      
+                            labels=None
+                            )
+plt.title('Survival-Diabetes')
+plt.axis('equal') # Sets the pie chart to look like a circle.
+plt.legend(labels=label, loc='upper left') 
+plt.show()
+
+#anemia
+
+anaemia_yes = heart_data[heart_data['anaemia']==1]
+anaemia_no = heart_data[heart_data['anaemia']==0]
+
+anaemia_yes_survi = anaemia_yes[heart_data["DEATH_EVENT"]==0]
+anaemia_yes_not_survi = anaemia_yes[heart_data["DEATH_EVENT"]==1]
+anaemia_no_survi = anaemia_no[heart_data["DEATH_EVENT"]==0]
+anaemia_no_not_survi = anaemia_no[heart_data["DEATH_EVENT"]==1]
+
+label = ['Anaemia Yes - Survived','Anaemia Yes - Not Survived', 'Anaemia No - Survived', 'Anaemia NO - Not Survived']
+values = [len(anaemia_yes[heart_data["DEATH_EVENT"]==0]),len(anaemia_yes[heart_data["DEATH_EVENT"]==1]),
+         len(anaemia_no[heart_data["DEATH_EVENT"]==0]),len(anaemia_no[heart_data["DEATH_EVENT"]==1])]
+
+anemia_death=pd.DataFrame({'label' : label,
+              'Count' : values})
+print(anemia_death.head())
+anemia_death['Count'].plot(kind='pie', ylabel='',
+                            figsize=(5, 6),
+                            autopct='%1.1f%%', # add in percentages
+                            startangle=90,     # start angle 90° (Africa)
+                            shadow=True,       # add shadow      
+                            labels=None
+                            )
+plt.title('Survival-Anemia')
+plt.axis('equal') # Sets the pie chart to look like a circle.
+plt.legend(labels=label, loc='upper left') 
+plt.show()
+
+#Blood pressure
+
+hbp_yes = heart_data[heart_data['high_blood_pressure']==1]
+hbp_no = heart_data[heart_data['high_blood_pressure']==0]
+
+hbp_yes_survi = hbp_yes[heart_data["DEATH_EVENT"]==0]
+hbp_yes_not_survi = hbp_yes[heart_data["DEATH_EVENT"]==1]
+hbp_no_survi = hbp_no[heart_data["DEATH_EVENT"]==0]
+hbp_no_not_survi = hbp_no[heart_data["DEATH_EVENT"]==1]
+
+labels = ['HBP Yes - Survived','HBP Yes - Not Survived', 'HBP No - Survived', 'HBP NO - Not Survived']
+values = [len(hbp_yes[heart_data["DEATH_EVENT"]==0]),len(hbp_yes[heart_data["DEATH_EVENT"]==1]),
+         len(hbp_no[heart_data["DEATH_EVENT"]==0]),len(hbp_no[heart_data["DEATH_EVENT"]==1])]
+
+BP_death=pd.DataFrame({'label' : label,
+              'Count' : values})
+print(BP_death.head())
+BP_death['Count'].plot(kind='pie', ylabel='',
+                            figsize=(5, 6),
+                            autopct='%1.1f%%', # add in percentages
+                            startangle=90,     # start angle 90° (Africa)
+                            shadow=True,       # add shadow      
+                            labels=None
+                            )
+plt.title('Survival-Blood Pressure')
+plt.axis('equal') # Sets the pie chart to look like a circle.
+plt.legend(labels=labels, loc='upper left') 
+plt.show()
+
+#smoking
+
+smoking_yes = heart_data[heart_data['smoking']==1]
+smoking_no = heart_data[heart_data['smoking']==0]
+
+smoking_yes_survi = smoking_yes[heart_data["DEATH_EVENT"]==0]
+smoking_yes_not_survi = smoking_yes[heart_data["DEATH_EVENT"]==1]
+smoking_no_survi = smoking_no[heart_data["DEATH_EVENT"]==0]
+smoking_no_not_survi = smoking_no[heart_data["DEATH_EVENT"]==1]
+
+labels = ['Smoking Yes - Survived','Smoking Yes - Not Survived', 'Smoking No - Survived', 'Smoking NO- Not Survived']
+values = [len(smoking_yes[heart_data["DEATH_EVENT"]==0]),len(smoking_yes[heart_data["DEATH_EVENT"]==1]),
+         len(smoking_no[heart_data["DEATH_EVENT"]==0]),len(smoking_no[heart_data["DEATH_EVENT"]==1])]
+
+smoking_death=pd.DataFrame({'label' : label,
+              'Count' : values})
+print(smoking_death.head())
+smoking_death['Count'].plot(kind='pie', ylabel='',
+                            figsize=(5, 6),
+                            autopct='%1.1f%%', # add in percentages
+                            startangle=90,     # start angle 90° (Africa)
+                            shadow=True,       # add shadow      
+                            labels=None
+                            )
+plt.title('Survival-Smoking')
+plt.axis('equal') # Sets the pie chart to look like a circle.
+plt.legend(labels=labels, loc='upper left') 
+plt.show()
+
+#from matplotlib.ticker import StrMethodFormatter
+ax = heart_data.hist(column='age', bins=25, grid=False, figsize=(12,8), color='#86bf91', zorder=2, rwidth=0.9)
+
+ax = ax[0]
+for x in ax:
+
+    # Despine
+    x.spines['right'].set_visible(False)
+    x.spines['top'].set_visible(False)
+    x.spines['left'].set_visible(False)
+
+    # Switch off ticks
+    x.tick_params(axis="both", which="both", bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on")
+
+    # Draw horizontal axis lines
+    vals = x.get_yticks()
+    for tick in vals:
+        x.axhline(y=tick, linestyle='dashed', alpha=0.4, color='#eeeeee', zorder=1)
+
+    # Remove title
+    x.set_title("")
+
+    # Set x-axis label
+    x.set_xlabel("age (year)", labelpad=20, weight='bold', size=12)
+
+    # Set y-axis label
+    x.set_ylabel("sum", labelpad=20, weight='bold', size=12)
+
+    # Format y-axis label
+    x.yaxis.set_major_formatter(StrMethodFormatter('{x:,g}'))
+    
+surv = heart_data[heart_data["DEATH_EVENT"]==0]["age"]
+survived=surv.sum()
+not_survived = heart_data[heart_data["DEATH_EVENT"]==1]["age"]
+index = ['age']
+df = pd.DataFrame({'survived': survived,
+                   'not survived': not_survived}, index=index)
+ax = df.plot.bar(rot=0)
+values = [len(smoking_yes[heart_data["DEATH_EVENT"]==0]),len(smoking_yes[heart_data["DEATH_EVENT"]==1]),
+         len(smoking_no[heart_data["DEATH_EVENT"]==0]),len(smoking_no[heart_data["DEATH_EVENT"]==1])]
+
+data_corr=heart_data.corr()
+plt.figure(figsize=(10,10))
+sns.heatmap(data_corr, vmin=-1, cmap='coolwarm', annot=True);
+print(data_corr['DEATH_EVENT'].sort_values(ascending=False).head(20))
+
+#split data
+x = heart_data[['ejection_fraction', 'serum_creatinine', 'serum_sodium', 'time']]
+y = heart_data['DEATH_EVENT']
+
+from sklearn.model_selection import train_test_split
+x_train,x_test,y_train,y_test=train_test_split(x,y,random_state=1,test_size=0.2) #pakai 80:20
+
+##KNN Method
+list1 = []
+for neighbors in range(3,10):
+    classifier = KNeighborsClassifier(n_neighbors=neighbors, metric='minkowski') #mencari nilai K paling optimal
+    classifier.fit(x_train, y_train) #training KNN pake data train
+    y_pred = classifier.predict(x_test) #hasil prediksi
+    list1.append(accuracy_score(y_test,y_pred))
+plt.plot(list(range(3,10)), list1)
+plt.show()
+
+#print matriks konfusi dan nilai akurasi
+mylist = []
+cm = confusion_matrix(y_test, y_pred)
+ac = accuracy_score(y_test, y_pred)
+mylist.append(ac)
+print('confusion matrix is:')
+print(cm)
+print('accuracy score is:')
+print(ac)
+
+##Decission Tree Method
+dt_clf = DecisionTreeClassifier(max_leaf_nodes=3, random_state=0, criterion='entropy')
+dt_clf.fit(x_train, y_train)
+dt_pred = dt_clf.predict(x_test)
+dt_acc = accuracy_score(y_test, dt_pred)
+mylist.append(100*dt_acc)
+print("Accuracy of Decision Tree Classifier is : ", "{:.2f}%".format(100* dt_acc))
+
+cm = confusion_matrix(y_test, dt_pred)
+plt.figure()
+plot_confusion_matrix(cm, figsize=(12,8), hide_ticks=True, cmap=plt.cm.Blues)
+plt.title("Decision Tree Model - Confusion Matrix")
+plt.xticks(range(2), ["Heart Not Failed","Heart Fail"], fontsize=16)
+plt.yticks(range(2), ["Heart Not Failed","Heart Fail"], fontsize=16)
+plt.show()
+
+##Gradient Boosting Method
+gradientboost_clf = GradientBoostingClassifier(max_depth=2, random_state=1)
+gradientboost_clf.fit(x_train,y_train)
+gradientboost_pred = gradientboost_clf.predict(x_test)
+gradientboost_acc = accuracy_score(y_test, gradientboost_pred)
+mylist.append(100*gradientboost_acc)
+print("Accuracy of Gradient Boosting is : ", "{:.2f}%".format(100* gradientboost_acc))
+
+cm = confusion_matrix(y_test, gradientboost_pred)
+plt.figure()
+plot_confusion_matrix(cm, figsize=(12,8), hide_ticks=True, cmap=plt.cm.Blues)
+plt.title("Gredient Boosting Model - Confusion Matrix")
+plt.xticks(range(2), ["Heart Not Failed","Heart Fail"], fontsize=16)
+plt.yticks(range(2), ["Heart Not Failed","Heart Fail"], fontsize=16)
+plt.show()
+
